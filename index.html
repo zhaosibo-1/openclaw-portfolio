@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>龙虾 OpenClaw — 编程项目展示</title>
+<style>
+/* ============================================================
+   CSS 变量 & 全局重置
+   ============================================================ */
+:root {
+  --bg-deep: #0a0a0f;
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --text-primary: #e8e8f0;
+  --text-secondary: #9898b8;
+  --accent-blue: #6c8cff;
+  --accent-purple: #a478e8;
+  --accent-glow: rgba(108, 140, 255, 0.3);
+  --glass-blur: 16px;
+  --radius: 16px;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   星河粒子画布 — 全屏背景
+   ============================================================ */
+#starfield {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ============================================================
+   星云光晕层
+   ============================================================ */
+.nebula {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+.nebula-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(108,140,255,0.6) 0%, transparent 70%);
+  top: -200px; left: 10%;
+  animation: nebulaDrift 20s ease-in-out infinite;
+}
+.nebula-2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(164,120,232,0.5) 0%, transparent 70%);
+  bottom: -150px; right: 5%;
+  animation: nebulaDrift 25s ease-in-out infinite reverse;
+}
+.nebula-3 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(108,140,255,0.4) 0%, transparent 70%);
+  top: 40%; left: 50%;
+  animation: nebulaDrift 30s ease-in-out infinite;
+}
+
+@keyframes nebulaDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -30px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+/* ============================================================
+   主容器
+   ============================================================ */
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ============================================================
+   导航栏 — 磨砂玻璃
+   ============================================================ */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(10, 10, 20, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  transition: var(--transition);
+}
+
+.navbar.scrolled {
+  background: rgba(10, 10, 20, 0.9);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  cursor: pointer;
+  user-select: none;
+}
+
+.logo-icon { font-size: 1.6rem; margin-right: 4px; }
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: var(--transition);
+  position: relative;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-links a.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 20px; height: 2px;
+  background: var(--accent-blue);
+  border-radius: 1px;
+}
+
+/* 移动端汉堡菜单 */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 8px;
+  background: none;
+  border: none;
+}
+.hamburger span {
+  display: block;
+  width: 24px; height: 2px;
+  background: var(--text-primary);
+  border-radius: 1px;
+  transition: var(--transition);
+}
+.hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+/* ============================================================
+   区块标题
+   ============================================================ */
+.section-title {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.section-title h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.section-title p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* ============================================================
+   项目卡片网格
+   ============================================================ */
+#projects-section {
+  padding: 80px 0;
+  min-height: 60vh;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
+}
+
+/* 卡片 — 玻璃磨砂 */
+.project-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 28px;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.project-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: linear-gradient(135deg, rgba(108,140,255,0.06), rgba(164,120,232,0.04));
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.project-card:hover::before { opacity: 1; }
+.project-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 60px var(--accent-glow);
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.card-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  flex: 1;
+}
+
+/* 技术栈标签 */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(108, 140, 255, 0.12);
+  color: var(--accent-blue);
+  border: 1px solid rgba(108, 140, 255, 0.2);
+  font-weight: 500;
+}
+
+/* 卡片按钮 */
+.card-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(108, 140, 255, 0.3);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(108, 140, 255, 0.5);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-secondary);
+  grid-column: 1 / -1;
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+.empty-state p { font-size: 1rem; }
+
+/* ============================================================
+   上传表单区域
+   ============================================================ */
+#upload-section {
+  padding: 80px 0;
+  min-height: 60vh;
+}
+
+.upload-form {
+  max-width: 640px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 36px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: var(--transition);
+  outline: none;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(108, 140, 255, 0.15);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-group select { cursor: pointer; }
+.form-group select option { background: #1a1a2e; color: #fff; }
+
+/* 文件上传区域 */
+.file-upload-area {
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.file-upload-area:hover,
+.file-upload-area.dragover {
+  border-color: var(--accent-blue);
+  background: rgba(108, 140, 255, 0.05);
+}
+.file-upload-area .upload-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.file-upload-area p { color: var(--text-secondary); font-size: 0.85rem; }
+.file-upload-area input[type="file"] { display: none; }
+
+.file-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.file-preview .preview-item {
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  color: var(--accent-blue);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.file-preview .preview-item .remove-file {
+  cursor: pointer;
+  opacity: 0.6;
+  font-size: 1rem;
+}
+.file-preview .preview-item .remove-file:hover { opacity: 1; }
+
+/* 提交按钮 */
+.btn-submit {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition);
+  box-shadow: 0 4px 20px rgba(108, 140, 255, 0.3);
+}
+.btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(108, 140, 255, 0.5);
+}
+
+/* 表单提示消息 */
+.form-toast {
+  text-align: center;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: none;
+}
+.form-toast.success {
+  display: block;
+  background: rgba(76, 175, 80, 0.15);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+.form-toast.error {
+  display: block;
+  background: rgba(244, 67, 54, 0.15);
+  color: #e57373;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+/* ============================================================
+   关于我区域
+   ============================================================ */
+#about-section {
+  padding: 80px 0;
+  min-height: 50vh;
+}
+
+.about-card {
+  max-width: 640px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 36px;
+  text-align: center;
+}
+
+.about-avatar {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+
+.about-card h3 {
+  font-size: 1.4rem;
+  margin-bottom: 8px;
+}
+
+.about-card .role {
+  color: var(--accent-blue);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.about-card .bio {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+
+.about-stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 28px;
+}
+
+.stat-item {
+  text-align: center;
+}
+.stat-num {
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ============================================================
+   页脚
+   ============================================================ */
+.footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 32px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.footer .gradient-text {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+}
+
+/* ============================================================
+   页面区块显隐
+   ============================================================ */
+.page-section { display: none; }
+.page-section.active { display: block; }
+
+/* ============================================================
+   响应式 — 移动端适配
+   ============================================================ */
+@media (max-width: 768px) {
+  .nav-links {
+    position: fixed;
+    top: 64px; left: 0;
+    width: 100%;
+    flex-direction: column;
+    background: rgba(10, 10, 20, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 16px 24px;
+    gap: 4px;
+    transform: translateY(-120%);
+    transition: transform 0.3s ease;
+    z-index: 99;
+  }
+  .nav-links.open {
+    transform: translateY(0);
+  }
+  .nav-links a {
+    display: block;
+    padding: 12px 16px;
+    border-radius: 8px;
+  }
+
+  .hamburger { display: flex; }
+
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-form,
+  .about-card {
+    padding: 24px;
+  }
+
+  .about-stats { gap: 24px; }
+
+  .section-title h2 { font-size: 1.6rem; }
+
+  .card-actions { flex-direction: column; }
+  .card-actions .btn { justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  .container { padding: 0 16px; }
+  .nav-inner { padding: 0 16px; }
+  .logo { font-size: 1.2rem; }
+  .project-card { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== 星云光晕 ========== -->
+<div class="nebula nebula-1"></div>
+<div class="nebula nebula-2"></div>
+<div class="nebula nebula-3"></div>
+
+<!-- ========== 星河粒子画布 ========== -->
+<canvas id="starfield"></canvas>
+
+<!-- ========== 导航栏 ========== -->
+<nav class="navbar" id="navbar">
+  <div class="nav-inner">
+    <div class="logo" onclick="navigateTo('home')">
+      <span class="logo-icon">🦞</span>OpenClaw
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="菜单">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#" data-page="home" class="active">首页</a></li>
+      <li><a href="#" data-page="projects">项目列表</a></li>
+      <li><a href="#" data-page="upload">上传项目</a></li>
+      <li><a href="#" data-page="about">关于我</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ========== 首页 ========== -->
+<section class="page-section active" id="page-home">
+  <div id="projects-section">
+    <div class="container">
+      <div class="section-title">
+        <h2>🚀 精选项目</h2>
+        <p>匠心打磨，每一行代码都有温度</p>
+      </div>
+      <div class="projects-grid" id="projectsGrid">
+        <!-- JS 动态渲染 -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 项目列表页 ========== -->
+<section class="page-section" id="page-projects">
+  <div id="projects-section-all">
+    <div class="container">
+      <div class="section-title">
+        <h2>📂 全部项目</h2>
+        <p>浏览所有编程作品</p>
+      </div>
+      <div class="projects-grid" id="projectsGridAll">
+        <!-- JS 动态渲染 -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 上传项目页 ========== -->
+<section class="page-section" id="page-upload">
+  <div id="upload-section">
+    <div class="container">
+      <div class="section-title">
+        <h2>📤 上传项目</h2>
+        <p>分享你的作品到展示墙</p>
+      </div>
+      <form class="upload-form" id="uploadForm">
+        <div class="form-group">
+          <label>项目名称 *</label>
+          <input type="text" id="projName" placeholder="例如：智能家居中控系统" required>
+        </div>
+        <div class="form-group">
+          <label>项目简介 *</label>
+          <textarea id="projDesc" placeholder="简要描述项目的功能、亮点…" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>技术栈（逗号分隔）*</label>
+          <input type="text" id="projTech" placeholder="例如：React, Node.js, MongoDB" required>
+        </div>
+        <div class="form-group">
+          <label>分类</label>
+          <select id="projCategory">
+            <option value="fullstack">全栈应用</option>
+            <option value="frontend">前端</option>
+            <option value="backend">后端</option>
+            <option value="mobile">移动端</option>
+            <option value="ai">AI / 机器学习</option>
+            <option value="cli">命令行工具</option>
+            <option value="game">游戏</option>
+            <option value="other">其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>预览链接</label>
+          <input type="url" id="projDemo" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label>源码链接</label>
+          <input type="url" id="projSource" placeholder="https://github.com/...">
+        </div>
+        <div class="form-group">
+          <label>项目截图</label>
+          <div class="file-upload-area" id="fileDropArea">
+            <div class="upload-icon">🖼️</div>
+            <p>拖拽图片到此处，或点击选择文件</p>
+            <p style="font-size:0.75rem;opacity:0.6;">支持 PNG / JPG / WebP，每张 ≤ 5MB</p>
+            <input type="file" id="projScreenshots" accept="image/*" multiple>
+          </div>
+          <div class="file-preview" id="filePreview"></div>
+        </div>
+        <button type="submit" class="btn-submit">✨ 提交项目</button>
+        <div class="form-toast" id="formToast"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 关于我 ========== -->
+<section class="page-section" id="page-about">
+  <div id="about-section">
+    <div class="container">
+      <div class="section-title">
+        <h2>👤 关于我</h2>
+        <p>热爱编程，持续创造</p>
+      </div>
+      <div class="about-card">
+        <div class="about-avatar">🦞</div>
+        <h3>龙虾 OpenClaw</h3>
+        <div class="role">全栈开发者 / 开源爱好者</div>
+        <p class="bio">
+          热衷于用代码解决真实世界的问题。擅长前后端全栈开发，
+          对 AI、系统架构、开发者工具充满热情。
+          相信好的代码应该是优雅、可维护且能打动人心的。
+        </p>
+        <div class="about-stats">
+          <div class="stat-item">
+            <div class="stat-num" id="statProjects">0</div>
+            <div class="stat-label">项目作品</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">∞</div>
+            <div class="stat-label">代码行数</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">☕</div>
+            <div class="stat-label">咖啡续命</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 页脚 ========== -->
+<footer class="footer">
+  <p>© 2026 <span class="gradient-text">龙虾 OpenClaw</span> — 用代码构建未来 🦞</p>
+</footer>
+
+<!-- ============================================================
+     JavaScript — 星河粒子 + 页面逻辑
+     ============================================================ -->
+<script>
+/* ============================================================
+   一、星河粒子引擎
+   粒子属性：位置 (x,y,z)、大小、亮度、闪烁相位、速度
+   鼠标交互：轻微视差偏移
+   ============================================================ */
+(function() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+
+  let width, height;
+  let mouseX = 0, mouseY = 0;
+  let targetMouseX = 0, targetMouseY = 0;
+
+  // 粒子数组
+  const STAR_COUNT = 280;
+  const stars = [];
+
+  // 初始化粒子
+  function createStar() {
+    return {
+      x: Math.random() * width,
+      y: Math.random() * height,
+      z: Math.random() * 3 + 0.5,          // 深度层 (0.5~3.5)，影响大小和速度
+      baseSize: Math.random() * 2.5 + 0.5,  // 基础大小
+      twinkleSpeed: Math.random() * 0.02 + 0.005,
+      twinklePhase: Math.random() * Math.PI * 2,
+      // 颜色偏向：大部分白/蓝白，少数淡紫
+      hue: Math.random() < 0.2
+        ? 260 + Math.random() * 30   // 淡紫
+        : 210 + Math.random() * 30,  // 蓝白
+      saturation: Math.random() * 30 + 10,
+      lightness: 80 + Math.random() * 20,
+      // 缓慢漂浮
+      driftX: (Math.random() - 0.5) * 0.3,
+      driftY: (Math.random() - 0.5) * 0.3,
+    };
+  }
+
+  function initStars() {
+    stars.length = 0;
+    for (let i = 0; i < STAR_COUNT; i++) {
+      stars.push(createStar());
+    }
+  }
+
+  // 调整画布大小
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width * devicePixelRatio;
+    canvas.height = height * devicePixelRatio;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    initStars();
+  }
+
+  // 鼠标移动 — 记录目标位置，粒子跟随产生视差
+  document.addEventListener('mousemove', function(e) {
+    targetMouseX = e.clientX;
+    targetMouseY = e.clientY;
+  });
+
+  // 触摸也支持
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 0) {
+      targetMouseX = e.touches[0].clientX;
+      targetMouseY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  // 动画循环
+  let lastTime = 0;
+  function animate(timestamp) {
+    const dt = Math.min(timestamp - lastTime, 50) / 16.67; // 归一化到 ~60fps
+    lastTime = timestamp;
+
+    // 平滑鼠标跟随
+    mouseX += (targetMouseX - mouseX) * 0.05;
+    mouseY += (targetMouseY - mouseY) * 0.05;
+
+    // 鼠标相对于屏幕中心的偏移 (-1 ~ 1)
+    const offsetX = (mouseX / width - 0.5) * 2;
+    const offsetY = (mouseY / height - 0.5) * 2;
+
+    ctx.clearRect(0, 0, width, height);
+
+    for (let i = 0; i < stars.length; i++) {
+      const s = stars[i];
+
+      // 闪烁
+      s.twinklePhase += s.twinkleSpeed * dt;
+      const twinkle = 0.5 + 0.5 * Math.sin(s.twinklePhase);
+      const alpha = 0.4 + twinkle * 0.6;
+
+      // 视差偏移：深度越大(z越小=近)，偏移越大
+      const parallax = 1 / s.z;
+      const px = s.x + offsetX * parallax * 30;
+      const py = s.y + offsetY * parallax * 30;
+
+      // 缓慢漂浮
+      s.x += s.driftX * dt * 0.1;
+      s.y += s.driftY * dt * 0.1;
+
+      // 边界循环
+      if (s.x < -20) s.x = width + 20;
+      if (s.x > width + 20) s.x = -20;
+      if (s.y < -20) s.y = height + 20;
+      if (s.y > height + 20) s.y = -20;
+
+      // 绘制粒子
+      const size = s.baseSize * (1 / s.z) * (0.8 + twinkle * 0.4);
+      const hsl = `hsla(${s.hue}, ${s.saturation}%, ${s.lightness}%, ${alpha})`;
+
+      ctx.beginPath();
+      ctx.arc(px, py, size, 0, Math.PI * 2);
+      ctx.fillStyle = hsl;
+      ctx.fill();
+
+      // 大星添加辉光
+      if (size > 1.8 && twinkle > 0.7) {
+        ctx.beginPath();
+        ctx.arc(px, py, size * 2.5, 0, Math.PI * 2);
+        const glow = ctx.createRadialGradient(px, py, size * 0.5, px, py, size * 2.5);
+        glow.addColorStop(0, `hsla(${s.hue}, ${s.saturation}%, ${s.lightness}%, ${alpha * 0.4})`);
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.fill();
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(animate);
+})();
+
+/* ============================================================
+   二、项目数据管理
+   使用 localStorage 持久化，预置几个示例项目
+   ============================================================ */
+const STORAGE_KEY = 'openclaw_projects';
+
+// 默认示例项目
+const defaultProjects = [
+  {
+    id: '1',
+    name: '智能家居控制台',
+    desc: '基于 MQTT + WebSocket 的实时家居设备监控面板，支持多设备联动、场景自动化、能耗统计，响应式适配平板与手机。',
+    tech: ['React', 'Node.js', 'MQTT', 'WebSocket', 'Chart.js'],
+    category: 'fullstack',
+    demo: 'https://demo.example.com/smarthome',
+    source: 'https://github.com/example/smarthome',
+    icon: '🏠',
+    createdAt: Date.now() - 86400000 * 7,
+  },
+  {
+    id: '2',
+    name: 'CLI 任务管理器',
+    desc: '终端下的全功能任务管理工具，支持看板视图、标签过滤、番茄钟、数据导出，纯 Node.js 实现，零依赖。',
+    tech: ['Node.js', 'CLI', 'Inquirer.js'],
+    category: 'cli',
+    demo: '',
+    source: 'https://github.com/example/taskcli',
+    icon: '⌨️',
+    createdAt: Date.now() - 86400000 * 3,
+  },
+  {
+    id: '3',
+    name: 'AI 代码审查助手',
+    desc: '基于 GPT API 的自动化代码审查工具，支持 GitHub PR 集成，智能检测 Bug、安全漏洞、性能问题，生成详细审查报告。',
+    tech: ['Python', 'FastAPI', 'OpenAI API', 'GitHub API', 'Docker'],
+    category: 'ai',
+    demo: '',
+    source: 'https://github.com/example/code-review-ai',
+    icon: '🤖',
+    createdAt: Date.now() - 86400000 * 1,
+  },
+  {
+    id: '4',
+    name: '像素风 Roguelike 地牢',
+    desc: '纯 Canvas 实现的像素风格 Roguelike 地牢探险游戏，随机生成地图、装备系统、回合制战斗，支持存档读档。',
+    tech: ['JavaScript', 'Canvas', 'Game Design'],
+    category: 'game',
+    demo: 'https://demo.example.com/dungeon',
+    source: 'https://github.com/example/pixel-dungeon',
+    icon: '🎮',
+    createdAt: Date.now() - 86400000 * 14,
+  },
+  {
+    id: '5',
+    name: '跨平台文件同步工具',
+    desc: '基于 Rust 开发的高性能文件实时同步工具，支持 P2P 传输、增量同步、冲突解决，比 rsync 更快更省资源。',
+    tech: ['Rust', 'Tokio', 'P2P', 'Protobuf'],
+    category: 'cli',
+    demo: '',
+    source: 'https://github.com/example/sync-tool',
+    icon: '🔄',
+    createdAt: Date.now() - 86400000 * 21,
+  },
+];
+
+// 分类对应的图标映射
+const categoryIcons = {
+  fullstack: '🌐', frontend: '🎨', backend: '⚙️',
+  mobile: '📱', ai: '🤖', cli: '⌨️', game: '🎮', other: '📦'
+};
+
+// 读取项目列表
+function getProjects() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (data) {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) { /* ignore */ }
+  // 首次访问，写入默认数据
+  saveProjects(defaultProjects);
+  return defaultProjects;
+}
+
+function saveProjects(projects) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  } catch (e) {
+    console.warn('localStorage 存储失败:', e);
+  }
+}
+
+/* ============================================================
+   三、项目卡片渲染
+   ============================================================ */
+function createProjectCard(project) {
+  const card = document.createElement('div');
+  card.className = 'project-card';
+
+  const icon = project.icon || categoryIcons[project.category] || '📦';
+
+  card.innerHTML = `
+    <div class="card-header">
+      <span class="card-icon">${escapeHTML(icon)}</span>
+      <h3 class="card-title">${escapeHTML(project.name)}</h3>
+    </div>
+    <p class="card-desc">${escapeHTML(project.desc)}</p>
+    <div class="tags">
+      ${project.tech.map(t => `<span class="tag">${escapeHTML(t)}</span>`).join('')}
+    </div>
+    <div class="card-actions">
+      ${project.demo ? `<a href="${escapeHTML(project.demo)}" target="_blank" rel="noopener" class="btn btn-primary">🔗 在线预览</a>` : ''}
+      ${project.source ? `<a href="${escapeHTML(project.source)}" target="_blank" rel="noopener" class="btn btn-outline">📂 查看源码</a>` : ''}
+    </div>
+  `;
+  return card;
+}
+
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// 渲染首页精选（最近4个）
+function renderFeatured() {
+  const grid = document.getElementById('projectsGrid');
+  const projects = getProjects();
+  const featured = projects.slice(0, 4);
+
+  grid.innerHTML = '';
+  if (featured.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p>还没有项目，去<a href="#" onclick="navigateTo('upload')" style="color:var(--accent-blue)">上传</a>第一个吧</p>
+      </div>`;
+    return;
+  }
+  featured.forEach(p => grid.appendChild(createProjectCard(p)));
+}
+
+// 渲染全部项目
+function renderAllProjects() {
+  const grid = document.getElementById('projectsGridAll');
+  const projects = getProjects();
+
+  grid.innerHTML = '';
+  if (projects.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p>还没有项目，去<a href="#" onclick="navigateTo('upload')" style="color:var(--accent-blue)">上传</a>第一个吧</p>
+      </div>`;
+    return;
+  }
+  projects.forEach(p => grid.appendChild(createProjectCard(p)));
+}
+
+// 更新关于页统计
+function updateStats() {
+  const el = document.getElementById('statProjects');
+  if (el) el.textContent = getProjects().length;
+}
+
+/* ============================================================
+   四、页面导航
+   ============================================================ */
+function navigateTo(page) {
+  // 更新导航激活状态
+  document.querySelectorAll('.nav-links a').forEach(a => {
+    a.classList.toggle('active', a.dataset.page === page);
+  });
+
+  // 切换页面区块
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
+
+  // 根据页面渲染内容
+  if (page === 'home') renderFeatured();
+  else if (page === 'projects') renderAllProjects();
+  else if (page === 'about') updateStats();
+
+  // 移动端关闭菜单
+  document.getElementById('navLinks').classList.remove('open');
+  document.getElementById('hamburger').classList.remove('open');
+
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 导航链接点击事件
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    navigateTo(this.dataset.page);
+  });
+});
+
+// 汉堡菜单
+document.getElementById('hamburger').addEventListener('click', function() {
+  this.classList.toggle('open');
+  document.getElementById('navLinks').classList.toggle('open');
+});
+
+// 导航栏滚动阴影
+window.addEventListener('scroll', function() {
+  const navbar = document.getElementById('navbar');
+  navbar.classList.toggle('scrolled', window.scrollY > 10);
+});
+
+/* ============================================================
+   五、上传表单逻辑
+   ============================================================ */
+// 文件拖拽上传
+const fileDropArea = document.getElementById('fileDropArea');
+const fileInput = document.getElementById('projScreenshots');
+const filePreview = document.getElementById('filePreview');
+let selectedFiles = [];
+
+// 点击触发文件选择
+fileDropArea.addEventListener('click', () => fileInput.click());
+
+// 拖拽效果
+fileDropArea.addEventListener('dragover', e => {
+  e.preventDefault();
+  fileDropArea.classList.add('dragover');
+});
+fileDropArea.addEventListener('dragleave', () => {
+  fileDropArea.classList.remove('dragover');
+});
+fileDropArea.addEventListener('drop', e => {
+  e.preventDefault();
+  fileDropArea.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+// 文件选择
+fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+function handleFiles(files) {
+  const validFiles = [];
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    if (f.size > 5 * 1024 * 1024) {
+      showToast('error', `图片 ${f.name} 超过 5MB 限制`);
+      continue;
+    }
+    validFiles.push(f);
+  }
+  selectedFiles = validFiles;
+  renderFilePreview();
+}
+
+function renderFilePreview() {
+  filePreview.innerHTML = '';
+  selectedFiles.forEach((f, i) => {
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    item.innerHTML = `
+      <span>📎 ${escapeHTML(f.name)}</span>
+      <span class="remove-file" data-index="${i}">✕</span>
+    `;
+    filePreview.appendChild(item);
+  });
+
+  // 移除按钮事件
+  filePreview.querySelectorAll('.remove-file').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.index);
+      selectedFiles.splice(idx, 1);
+      renderFilePreview();
+    });
+  });
+}
+
+// Toast 提示
+function showToast(type, msg) {
+  const toast = document.getElementById('formToast');
+  toast.className = 'form-toast ' + type;
+  toast.textContent = msg;
+  setTimeout(() => { toast.className = 'form-toast'; }, 4000);
+}
+
+// 表单提交
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const name = document.getElementById('projName').value.trim();
+  const desc = document.getElementById('projDesc').value.trim();
+  const techRaw = document.getElementById('projTech').value.trim();
+  const category = document.getElementById('projCategory').value;
+  const demo = document.getElementById('projDemo').value.trim();
+  const source = document.getElementById('projSource').value.trim();
+
+  if (!name || !desc || !techRaw) {
+    showToast('error', '请填写必填字段（名称、简介、技术栈）');
+    return;
+  }
+
+  const tech = techRaw.split(',').map(t => t.trim()).filter(Boolean);
+  if (tech.length === 0) {
+    showToast('error', '请至少填写一项技术栈');
+    return;
+  }
+
+  // 处理截图（转为 data URL 存储）
+  const screenshotPromises = selectedFiles.map(f => {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(f);
+    });
+  });
+
+  Promise.all(screenshotPromises).then(screenshots => {
+    const validScreenshots = screenshots.filter(Boolean);
+
+    const newProject = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name,
+      desc,
+      tech,
+      category,
+      demo,
+      source,
+      icon: categoryIcons[category] || '📦',
+      screenshots: validScreenshots,
+      createdAt: Date.now(),
+    };
+
+    const projects = getProjects();
+    projects.unshift(newProject);
+    saveProjects(projects);
+
+    // 重置表单
+    this.reset();
+    selectedFiles = [];
+    renderFilePreview();
+    document.getElementById('projCategory').value = 'fullstack';
+
+    showToast('success', '🎉 项目上传成功！可在项目列表中查看');
+
+    // 刷新首页和项目列表
+    renderFeatured();
+    renderAllProjects();
+    updateStats();
+  });
+});
+
+/* ============================================================
+   六、初始化
+   ============================================================ */
+function init() {
+  renderFeatured();
+  renderAllProjects();
+  updateStats();
+}
+
+// DOM 就绪后初始化
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
