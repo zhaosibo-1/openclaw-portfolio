@@ -262,6 +262,27 @@ body {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 60px var(--accent-glow);
 }
 
+/* 删除按钮 */
+.btn-delete {
+  background: rgba(255, 70, 70, 0.15);
+  border: 1px solid rgba(255, 70, 70, 0.3);
+  color: #ff6b6b;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all var(--transition);
+  line-height: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.btn-delete:hover {
+  background: rgba(255, 70, 70, 0.3);
+  border-color: rgba(255, 70, 70, 0.6);
+  color: #ff4444;
+  transform: scale(1.1);
+}
+
 .card-header {
   display: flex;
   align-items: flex-start;
@@ -678,8 +699,9 @@ body {
     <ul class="nav-links" id="navLinks">
       <li><a href="#" data-page="home" class="active">首页</a></li>
       <li><a href="#" data-page="projects">项目列表</a></li>
-      <li><a href="#" data-page="upload">上传项目</a></li>
+      <li><a href="#" data-page="upload" id="navUpload">上传项目</a></li>
       <li><a href="#" data-page="about">关于我</a></li>
+      <li><a href="#" id="navAdmin" onclick="handleAdminClick(event)" style="margin-left:auto;">🔑 登录</a></li>
     </ul>
   </div>
 </nav>
@@ -722,6 +744,14 @@ body {
         <h2>📤 上传项目</h2>
         <p>分享你的作品到展示墙</p>
       </div>
+      <div id="uploadLocked" style="display:none;">
+        <div class="empty-state">
+          <div class="empty-icon">🔒</div>
+          <p>此功能仅限管理员使用</p>
+          <button class="btn btn-primary" onclick="showLoginPrompt()" style="margin-top:16px;">🔑 管理员登录</button>
+        </div>
+      </div>
+      <div id="uploadFormWrapper">
       <form class="upload-form" id="uploadForm">
         <div class="form-group">
           <label>项目名称 *</label>
@@ -769,6 +799,7 @@ body {
         <button type="submit" class="btn-submit">✨ 提交项目</button>
         <div class="form-toast" id="formToast"></div>
       </form>
+      </div>
     </div>
   </div>
 </section>
@@ -813,6 +844,9 @@ body {
 <footer class="footer">
   <p>© 2026 <span class="gradient-text">龙虾 OpenClaw</span> — 用代码构建未来 🦞</p>
 </footer>
+
+<!-- 全局 Toast 提示 -->
+<div class="form-toast" id="globalToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;"></div>
 
 <!-- ============================================================
      JavaScript — 星河粒子 + 页面逻辑
@@ -959,68 +993,12 @@ body {
 
 /* ============================================================
    二、项目数据管理
-   使用 localStorage 持久化，预置几个示例项目
+   使用 localStorage 持久化，无预设示例项目
    ============================================================ */
 const STORAGE_KEY = 'openclaw_projects';
 
-// 默认示例项目
-const defaultProjects = [
-  {
-    id: '1',
-    name: '智能家居控制台',
-    desc: '基于 MQTT + WebSocket 的实时家居设备监控面板，支持多设备联动、场景自动化、能耗统计，响应式适配平板与手机。',
-    tech: ['React', 'Node.js', 'MQTT', 'WebSocket', 'Chart.js'],
-    category: 'fullstack',
-    demo: 'https://demo.example.com/smarthome',
-    source: 'https://github.com/example/smarthome',
-    icon: '🏠',
-    createdAt: Date.now() - 86400000 * 7,
-  },
-  {
-    id: '2',
-    name: 'CLI 任务管理器',
-    desc: '终端下的全功能任务管理工具，支持看板视图、标签过滤、番茄钟、数据导出，纯 Node.js 实现，零依赖。',
-    tech: ['Node.js', 'CLI', 'Inquirer.js'],
-    category: 'cli',
-    demo: '',
-    source: 'https://github.com/example/taskcli',
-    icon: '⌨️',
-    createdAt: Date.now() - 86400000 * 3,
-  },
-  {
-    id: '3',
-    name: 'AI 代码审查助手',
-    desc: '基于 GPT API 的自动化代码审查工具，支持 GitHub PR 集成，智能检测 Bug、安全漏洞、性能问题，生成详细审查报告。',
-    tech: ['Python', 'FastAPI', 'OpenAI API', 'GitHub API', 'Docker'],
-    category: 'ai',
-    demo: '',
-    source: 'https://github.com/example/code-review-ai',
-    icon: '🤖',
-    createdAt: Date.now() - 86400000 * 1,
-  },
-  {
-    id: '4',
-    name: '像素风 Roguelike 地牢',
-    desc: '纯 Canvas 实现的像素风格 Roguelike 地牢探险游戏，随机生成地图、装备系统、回合制战斗，支持存档读档。',
-    tech: ['JavaScript', 'Canvas', 'Game Design'],
-    category: 'game',
-    demo: 'https://demo.example.com/dungeon',
-    source: 'https://github.com/example/pixel-dungeon',
-    icon: '🎮',
-    createdAt: Date.now() - 86400000 * 14,
-  },
-  {
-    id: '5',
-    name: '跨平台文件同步工具',
-    desc: '基于 Rust 开发的高性能文件实时同步工具，支持 P2P 传输、增量同步、冲突解决，比 rsync 更快更省资源。',
-    tech: ['Rust', 'Tokio', 'P2P', 'Protobuf'],
-    category: 'cli',
-    demo: '',
-    source: 'https://github.com/example/sync-tool',
-    icon: '🔄',
-    createdAt: Date.now() - 86400000 * 21,
-  },
-];
+// 默认项目列表为空（不预设任何示例项目）
+const defaultProjects = [];
 
 // 分类对应的图标映射
 const categoryIcons = {
@@ -1034,12 +1012,12 @@ function getProjects() {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) { /* ignore */ }
-  // 首次访问，写入默认数据
+  // 首次访问，写入空列表
   saveProjects(defaultProjects);
-  return defaultProjects;
+  return [...defaultProjects];
 }
 
 function saveProjects(projects) {
@@ -1058,11 +1036,13 @@ function createProjectCard(project) {
   card.className = 'project-card';
 
   const icon = project.icon || categoryIcons[project.category] || '📦';
+  const showEdit = isAdmin();
 
   card.innerHTML = `
     <div class="card-header">
       <span class="card-icon">${escapeHTML(icon)}</span>
       <h3 class="card-title">${escapeHTML(project.name)}</h3>
+      ${showEdit ? `<button class="btn-delete" data-id="${escapeHTML(project.id)}" title="删除项目">🗑️</button>` : ''}
     </div>
     <p class="card-desc">${escapeHTML(project.desc)}</p>
     <div class="tags">
@@ -1073,7 +1053,33 @@ function createProjectCard(project) {
       ${project.source ? `<a href="${escapeHTML(project.source)}" target="_blank" rel="noopener" class="btn btn-outline">📂 查看源码</a>` : ''}
     </div>
   `;
+
+  // 绑定删除事件
+  if (showEdit) {
+    const delBtn = card.querySelector('.btn-delete');
+    delBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      deleteProject(project.id);
+    });
+  }
+
   return card;
+}
+
+// 删除项目
+function deleteProject(id) {
+  if (!isAdmin()) return;
+  if (!confirm('确定要删除这个项目吗？此操作不可恢复。')) return;
+
+  let projects = getProjects();
+  projects = projects.filter(p => p.id !== id);
+  saveProjects(projects);
+
+  // 刷新所有视图
+  renderFeatured();
+  renderAllProjects();
+  updateStats();
+  showToast('success', '✅ 项目已删除');
 }
 
 function escapeHTML(str) {
@@ -1140,6 +1146,7 @@ function navigateTo(page) {
   // 根据页面渲染内容
   if (page === 'home') renderFeatured();
   else if (page === 'projects') renderAllProjects();
+  else if (page === 'upload') checkUploadAccess();
   else if (page === 'about') updateStats();
 
   // 移动端关闭菜单
@@ -1150,8 +1157,8 @@ function navigateTo(page) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// 导航链接点击事件
-document.querySelectorAll('.nav-links a').forEach(link => {
+// 导航链接点击事件（跳过管理员按钮）
+document.querySelectorAll('.nav-links a[data-page]').forEach(link => {
   link.addEventListener('click', function(e) {
     e.preventDefault();
     navigateTo(this.dataset.page);
@@ -1169,6 +1176,91 @@ window.addEventListener('scroll', function() {
   const navbar = document.getElementById('navbar');
   navbar.classList.toggle('scrolled', window.scrollY > 10);
 });
+
+/* ============================================================
+   管理员认证
+   密码存储在 localStorage，首次访问时设置
+   ============================================================ */
+const ADMIN_KEY = 'openclaw_admin_pwd';
+const ADMIN_SESSION_KEY = 'openclaw_admin_session';
+
+// 检查是否为管理员（当前会话已登录）
+function isAdmin() {
+  return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+}
+
+// 显示登录弹窗
+function showLoginPrompt() {
+  const pwd = prompt('请输入管理员密码：');
+  if (pwd === null) return;
+
+  // 获取存储的密码，如果未设置则首次设置
+  let storedPwd = localStorage.getItem(ADMIN_KEY);
+  if (!storedPwd) {
+    // 首次设置密码
+    const confirmPwd = prompt('首次使用，请设置管理员密码（请牢记）：');
+    if (!confirmPwd) return;
+    localStorage.setItem(ADMIN_KEY, confirmPwd);
+    storedPwd = confirmPwd;
+  }
+
+  if (pwd === storedPwd) {
+    sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+    updateAdminUI();
+    showToast('success', '✅ 登录成功！您现在可以管理项目了');
+    // 如果在上传页面，刷新显示
+    checkUploadAccess();
+    renderFeatured();
+    renderAllProjects();
+  } else {
+    alert('❌ 密码错误！');
+  }
+}
+
+// 退出登录
+function logoutAdmin() {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  updateAdminUI();
+  renderFeatured();
+  renderAllProjects();
+  checkUploadAccess();
+  showToast('success', '👋 已退出管理员模式');
+}
+
+// 更新管理员 UI 状态
+function updateAdminUI() {
+  const navAdmin = document.getElementById('navAdmin');
+  if (isAdmin()) {
+    navAdmin.textContent = '👑 退出';
+    navAdmin.style.color = '#ffd700';
+  } else {
+    navAdmin.textContent = '🔑 登录';
+    navAdmin.style.color = '';
+  }
+}
+
+// 管理员按钮点击处理
+function handleAdminClick(e) {
+  e.preventDefault();
+  if (isAdmin()) {
+    logoutAdmin();
+  } else {
+    showLoginPrompt();
+  }
+}
+
+// 检查上传页面访问权限
+function checkUploadAccess() {
+  const locked = document.getElementById('uploadLocked');
+  const formWrapper = document.getElementById('uploadFormWrapper');
+  if (isAdmin()) {
+    locked.style.display = 'none';
+    formWrapper.style.display = '';
+  } else {
+    locked.style.display = '';
+    formWrapper.style.display = 'none';
+  }
+}
 
 /* ============================================================
    五、上传表单逻辑
@@ -1238,10 +1330,13 @@ function renderFilePreview() {
 
 // Toast 提示
 function showToast(type, msg) {
-  const toast = document.getElementById('formToast');
+  // 优先用全局 toast，回退到表单 toast
+  const toast = document.getElementById('globalToast') || document.getElementById('formToast');
+  if (!toast) return;
   toast.className = 'form-toast ' + type;
   toast.textContent = msg;
-  setTimeout(() => { toast.className = 'form-toast'; }, 4000);
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => { toast.className = 'form-toast'; }, 4000);
 }
 
 // 表单提交
@@ -1315,6 +1410,8 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
    六、初始化
    ============================================================ */
 function init() {
+  updateAdminUI();
+  checkUploadAccess();
   renderFeatured();
   renderAllProjects();
   updateStats();
