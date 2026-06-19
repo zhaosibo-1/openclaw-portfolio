@@ -262,6 +262,27 @@ body {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 60px var(--accent-glow);
 }
 
+/* 删除按钮 */
+.btn-delete {
+  background: rgba(255, 70, 70, 0.15);
+  border: 1px solid rgba(255, 70, 70, 0.3);
+  color: #ff6b6b;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all var(--transition);
+  line-height: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.btn-delete:hover {
+  background: rgba(255, 70, 70, 0.3);
+  border-color: rgba(255, 70, 70, 0.6);
+  color: #ff4444;
+  transform: scale(1.1);
+}
+
 .card-header {
   display: flex;
   align-items: flex-start;
@@ -678,7 +699,9 @@ body {
     <ul class="nav-links" id="navLinks">
       <li><a href="#" data-page="home" class="active">首页</a></li>
       <li><a href="#" data-page="projects">项目列表</a></li>
+      <li><a href="#" data-page="upload" id="navUpload">上传项目</a></li>
       <li><a href="#" data-page="about">关于我</a></li>
+      <li><a href="#" id="navAdmin" onclick="handleAdminClick(event)" style="margin-left:auto;">🔑 登录</a></li>
     </ul>
   </div>
 </nav>
@@ -713,7 +736,73 @@ body {
   </div>
 </section>
 
-
+<!-- ========== 上传项目页 ========== -->
+<section class="page-section" id="page-upload">
+  <div id="upload-section">
+    <div class="container">
+      <div class="section-title">
+        <h2>📤 上传项目</h2>
+        <p>分享你的作品到展示墙</p>
+      </div>
+      <div id="uploadLocked" style="display:none;">
+        <div class="empty-state">
+          <div class="empty-icon">🔒</div>
+          <p>此功能仅限管理员使用</p>
+          <button class="btn btn-primary" onclick="showLoginPrompt()" style="margin-top:16px;">🔑 管理员登录</button>
+        </div>
+      </div>
+      <div id="uploadFormWrapper">
+      <form class="upload-form" id="uploadForm">
+        <div class="form-group">
+          <label>项目名称 *</label>
+          <input type="text" id="projName" placeholder="例如：智能家居中控系统" required>
+        </div>
+        <div class="form-group">
+          <label>项目简介 *</label>
+          <textarea id="projDesc" placeholder="简要描述项目的功能、亮点…" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>技术栈（逗号分隔）*</label>
+          <input type="text" id="projTech" placeholder="例如：React, Node.js, MongoDB" required>
+        </div>
+        <div class="form-group">
+          <label>分类</label>
+          <select id="projCategory">
+            <option value="fullstack">全栈应用</option>
+            <option value="frontend">前端</option>
+            <option value="backend">后端</option>
+            <option value="mobile">移动端</option>
+            <option value="ai">AI / 机器学习</option>
+            <option value="cli">命令行工具</option>
+            <option value="game">游戏</option>
+            <option value="other">其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>预览链接</label>
+          <input type="url" id="projDemo" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label>源码链接</label>
+          <input type="url" id="projSource" placeholder="https://github.com/...">
+        </div>
+        <div class="form-group">
+          <label>项目截图</label>
+          <div class="file-upload-area" id="fileDropArea">
+            <div class="upload-icon">🖼️</div>
+            <p>拖拽图片到此处，或点击选择文件</p>
+            <p style="font-size:0.75rem;opacity:0.6;">支持 PNG / JPG / WebP，每张 ≤ 5MB</p>
+            <input type="file" id="projScreenshots" accept="image/*" multiple>
+          </div>
+          <div class="file-preview" id="filePreview"></div>
+        </div>
+        <button type="submit" class="btn-submit">✨ 提交项目</button>
+        <div class="form-toast" id="formToast"></div>
+      </form>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- ========== 关于我 ========== -->
 <section class="page-section" id="page-about">
@@ -755,6 +844,9 @@ body {
 <footer class="footer">
   <p>© 2026 <span class="gradient-text">赵思博</span> — 学习项目展示 📚</p>
 </footer>
+
+<!-- 全局 Toast 提示 -->
+<div class="form-toast" id="globalToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;"></div>
 
 <!-- ============================================================
      JavaScript — 星河粒子 + 页面逻辑
@@ -944,11 +1036,13 @@ function createProjectCard(project) {
   card.className = 'project-card';
 
   const icon = project.icon || categoryIcons[project.category] || '📦';
+  const showEdit = isAdmin();
 
   card.innerHTML = `
     <div class="card-header">
       <span class="card-icon">${escapeHTML(icon)}</span>
       <h3 class="card-title">${escapeHTML(project.name)}</h3>
+      ${showEdit ? `<button class="btn-delete" data-id="${escapeHTML(project.id)}" title="删除项目">🗑️</button>` : ''}
     </div>
     <p class="card-desc">${escapeHTML(project.desc)}</p>
     <div class="tags">
@@ -959,7 +1053,33 @@ function createProjectCard(project) {
       ${project.source ? `<a href="${escapeHTML(project.source)}" target="_blank" rel="noopener" class="btn btn-outline">📂 查看源码</a>` : ''}
     </div>
   `;
+
+  // 绑定删除事件
+  if (showEdit) {
+    const delBtn = card.querySelector('.btn-delete');
+    delBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      deleteProject(project.id);
+    });
+  }
+
   return card;
+}
+
+// 删除项目
+function deleteProject(id) {
+  if (!isAdmin()) return;
+  if (!confirm('确定要删除这个项目吗？此操作不可恢复。')) return;
+
+  let projects = getProjects();
+  projects = projects.filter(p => p.id !== id);
+  saveProjects(projects);
+
+  // 刷新所有视图
+  renderFeatured();
+  renderAllProjects();
+  updateStats();
+  showToast('success', '✅ 项目已删除');
 }
 
 function escapeHTML(str) {
@@ -979,7 +1099,7 @@ function renderFeatured() {
     grid.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">📭</div>
-        <p>还没有项目，敬请期待</p>
+        <p>还没有项目，去<a href="#" onclick="navigateTo('upload')" style="color:var(--accent-blue)">上传</a>第一个吧</p>
       </div>`;
     return;
   }
@@ -996,7 +1116,7 @@ function renderAllProjects() {
     grid.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">📭</div>
-        <p>还没有项目，敬请期待</p>
+        <p>还没有项目，去<a href="#" onclick="navigateTo('upload')" style="color:var(--accent-blue)">上传</a>第一个吧</p>
       </div>`;
     return;
   }
@@ -1026,6 +1146,7 @@ function navigateTo(page) {
   // 根据页面渲染内容
   if (page === 'home') renderFeatured();
   else if (page === 'projects') renderAllProjects();
+  else if (page === 'upload') checkUploadAccess();
   else if (page === 'about') updateStats();
 
   // 移动端关闭菜单
@@ -1057,9 +1178,232 @@ window.addEventListener('scroll', function() {
 });
 
 /* ============================================================
-   五、初始化
+   管理员认证
+   密码存储在 localStorage，首次访问时设置
+   ============================================================ */
+const ADMIN_KEY = 'openclaw_admin_pwd';
+const ADMIN_SESSION_KEY = 'openclaw_admin_session';
+
+// 写死的管理员密码（所有设备通用）
+const ADMIN_PASSWORD = 'zhao3388399213';
+
+// 检查是否为管理员（当前会话已登录）
+function isAdmin() {
+  return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+}
+
+// 显示登录弹窗
+function showLoginPrompt() {
+  const pwd = prompt('请输入管理员密码：');
+  if (pwd === null) return;
+
+  if (pwd === ADMIN_PASSWORD) {
+    sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+    updateAdminUI();
+    showToast('success', '✅ 登录成功！您现在可以管理项目了');
+    checkUploadAccess();
+    renderFeatured();
+    renderAllProjects();
+  } else {
+    alert('❌ 密码错误！');
+  }
+}
+
+// 退出登录
+function logoutAdmin() {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  updateAdminUI();
+  renderFeatured();
+  renderAllProjects();
+  checkUploadAccess();
+  showToast('success', '👋 已退出管理员模式');
+}
+
+// 更新管理员 UI 状态
+function updateAdminUI() {
+  const navAdmin = document.getElementById('navAdmin');
+  if (isAdmin()) {
+    navAdmin.textContent = '👑 退出';
+    navAdmin.style.color = '#ffd700';
+  } else {
+    navAdmin.textContent = '🔑 登录';
+    navAdmin.style.color = '';
+  }
+}
+
+// 管理员按钮点击处理
+function handleAdminClick(e) {
+  e.preventDefault();
+  if (isAdmin()) {
+    logoutAdmin();
+  } else {
+    showLoginPrompt();
+  }
+}
+
+// 检查上传页面访问权限
+function checkUploadAccess() {
+  const locked = document.getElementById('uploadLocked');
+  const formWrapper = document.getElementById('uploadFormWrapper');
+  if (isAdmin()) {
+    locked.style.display = 'none';
+    formWrapper.style.display = '';
+  } else {
+    locked.style.display = '';
+    formWrapper.style.display = 'none';
+  }
+}
+
+/* ============================================================
+   五、上传表单逻辑
+   ============================================================ */
+// 文件拖拽上传
+const fileDropArea = document.getElementById('fileDropArea');
+const fileInput = document.getElementById('projScreenshots');
+const filePreview = document.getElementById('filePreview');
+let selectedFiles = [];
+
+// 点击触发文件选择
+fileDropArea.addEventListener('click', () => fileInput.click());
+
+// 拖拽效果
+fileDropArea.addEventListener('dragover', e => {
+  e.preventDefault();
+  fileDropArea.classList.add('dragover');
+});
+fileDropArea.addEventListener('dragleave', () => {
+  fileDropArea.classList.remove('dragover');
+});
+fileDropArea.addEventListener('drop', e => {
+  e.preventDefault();
+  fileDropArea.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+// 文件选择
+fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+function handleFiles(files) {
+  const validFiles = [];
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    if (f.size > 5 * 1024 * 1024) {
+      showToast('error', `图片 ${f.name} 超过 5MB 限制`);
+      continue;
+    }
+    validFiles.push(f);
+  }
+  selectedFiles = validFiles;
+  renderFilePreview();
+}
+
+function renderFilePreview() {
+  filePreview.innerHTML = '';
+  selectedFiles.forEach((f, i) => {
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    item.innerHTML = `
+      <span>📎 ${escapeHTML(f.name)}</span>
+      <span class="remove-file" data-index="${i}">✕</span>
+    `;
+    filePreview.appendChild(item);
+  });
+
+  // 移除按钮事件
+  filePreview.querySelectorAll('.remove-file').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.index);
+      selectedFiles.splice(idx, 1);
+      renderFilePreview();
+    });
+  });
+}
+
+// Toast 提示
+function showToast(type, msg) {
+  // 优先用全局 toast，回退到表单 toast
+  const toast = document.getElementById('globalToast') || document.getElementById('formToast');
+  if (!toast) return;
+  toast.className = 'form-toast ' + type;
+  toast.textContent = msg;
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => { toast.className = 'form-toast'; }, 4000);
+}
+
+// 表单提交
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const name = document.getElementById('projName').value.trim();
+  const desc = document.getElementById('projDesc').value.trim();
+  const techRaw = document.getElementById('projTech').value.trim();
+  const category = document.getElementById('projCategory').value;
+  const demo = document.getElementById('projDemo').value.trim();
+  const source = document.getElementById('projSource').value.trim();
+
+  if (!name || !desc || !techRaw) {
+    showToast('error', '请填写必填字段（名称、简介、技术栈）');
+    return;
+  }
+
+  const tech = techRaw.split(',').map(t => t.trim()).filter(Boolean);
+  if (tech.length === 0) {
+    showToast('error', '请至少填写一项技术栈');
+    return;
+  }
+
+  // 处理截图（转为 data URL 存储）
+  const screenshotPromises = selectedFiles.map(f => {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(f);
+    });
+  });
+
+  Promise.all(screenshotPromises).then(screenshots => {
+    const validScreenshots = screenshots.filter(Boolean);
+
+    const newProject = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name,
+      desc,
+      tech,
+      category,
+      demo,
+      source,
+      icon: categoryIcons[category] || '📦',
+      screenshots: validScreenshots,
+      createdAt: Date.now(),
+    };
+
+    const projects = getProjects();
+    projects.unshift(newProject);
+    saveProjects(projects);
+
+    // 重置表单
+    this.reset();
+    selectedFiles = [];
+    renderFilePreview();
+    document.getElementById('projCategory').value = 'fullstack';
+
+    showToast('success', '🎉 项目上传成功！可在项目列表中查看');
+
+    // 刷新首页和项目列表
+    renderFeatured();
+    renderAllProjects();
+    updateStats();
+  });
+});
+
+/* ============================================================
+   六、初始化
    ============================================================ */
 function init() {
+  updateAdminUI();
+  checkUploadAccess();
   renderFeatured();
   renderAllProjects();
   updateStats();
