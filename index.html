@@ -1184,6 +1184,9 @@ window.addEventListener('scroll', function() {
 const ADMIN_KEY = 'openclaw_admin_pwd';
 const ADMIN_SESSION_KEY = 'openclaw_admin_session';
 
+// 写死的管理员密码（所有设备通用）
+const ADMIN_PASSWORD = 'zhao3388399213';
+
 // 检查是否为管理员（当前会话已登录）
 function isAdmin() {
   return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
@@ -1194,21 +1197,10 @@ function showLoginPrompt() {
   const pwd = prompt('请输入管理员密码：');
   if (pwd === null) return;
 
-  // 获取存储的密码，如果未设置则首次设置
-  let storedPwd = localStorage.getItem(ADMIN_KEY);
-  if (!storedPwd) {
-    // 首次设置密码
-    const confirmPwd = prompt('首次使用，请设置管理员密码（请牢记）：');
-    if (!confirmPwd) return;
-    localStorage.setItem(ADMIN_KEY, confirmPwd);
-    storedPwd = confirmPwd;
-  }
-
-  if (pwd === storedPwd) {
+  if (pwd === ADMIN_PASSWORD) {
     sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
     updateAdminUI();
     showToast('success', '✅ 登录成功！您现在可以管理项目了');
-    // 如果在上传页面，刷新显示
     checkUploadAccess();
     renderFeatured();
     renderAllProjects();
