@@ -1017,8 +1017,8 @@ function createProjectCard(project) {
       ${project.tech.map(t => `<span class="tag">${escapeHTML(t)}</span>`).join('')}
     </div>
     <div class="card-actions">
-      ${project.demo ? `<button onclick="showLink('🔗 在线预览','${escapeHTML(project.demo)}')" class="btn btn-primary" style="cursor:pointer;border:none">🔗 在线预览</button>` : ''}
-      ${project.source ? `<button onclick="showLink('📂 查看源码','${escapeHTML(project.source)}')" class="btn btn-outline" style="cursor:pointer;border:none">📂 查看源码</button>` : ''}
+      ${project.demo ? `<div style="margin-bottom:6px"><span class="btn btn-primary" style="display:inline-block;padding:8px 16px;font-size:13px">🔗 在线预览</span><div style="font-size:12px;color:var(--accent-blue);margin-top:4px;word-break:break-all;font-family:monospace">${escapeHTML(project.demo)}</div></div>` : ''}
+      ${project.source ? `<div><span class="btn btn-outline" style="display:inline-block;padding:8px 16px;font-size:13px">📂 查看源码</span><div style="font-size:12px;color:var(--accent-blue);margin-top:4px;word-break:break-all;font-family:monospace">${escapeHTML(project.source)}</div></div>` : ''}
     </div>
   `;
   return card;
