@@ -756,19 +756,60 @@ body {
   <p>© 2026 <span class="gradient-text">赵思博</span> — 学习项目展示 📚</p>
 </footer>
 
-<!-- 项目直达链接（硬编码，不依赖 JS） -->
+<!-- 项目链接按钮（点击显示链接文本） -->
 <div style="position:relative;z-index:1;text-align:center;padding:20px 24px 40px;border-top:1px solid rgba(255,255,255,0.06);margin-top:0">
-  <div style="font-size:14px;color:var(--text-secondary);margin-bottom:12px">📂 项目链接</div>
-  <div style="margin-bottom:8px">
-    <span style="font-size:13px;color:var(--text-secondary)">🤖 豆沙包 - AI 智能伴侣</span>
-  </div>
-  <div style="margin:6px 0">
-    <a href="https://doushabao1.vercel.app/" target="_blank" rel="noopener" style="color:#6c8cff;text-decoration:underline;font-size:13px">🔗 在线预览 → doushabao1.vercel.app</a>
-  </div>
-  <div style="margin:6px 0">
-    <a href="https://github.com/zhaosibo-1/doushabao" target="_blank" rel="noopener" style="color:#6c8cff;text-decoration:underline;font-size:13px">📂 查看源码 → github.com/zhaosibo-1/doushabao</a>
+  <div style="font-size:14px;color:var(--text-secondary);margin-bottom:16px">📂 豆沙包项目</div>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <button onclick="showLink('🔗 在线预览', 'https://doushabao1.vercel.app/')" class="btn btn-primary" style="cursor:pointer;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));color:#fff">🔗 在线预览</button>
+    <button onclick="showLink('📂 查看源码', 'https://github.com/zhaosibo-1/doushabao')" class="btn btn-outline" style="cursor:pointer;padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;background:transparent;color:var(--text-primary);border:1px solid rgba(255,255,255,0.2)">📂 查看源码</button>
   </div>
 </div>
+
+<!-- 链接弹出框 -->
+<div id="linkToast" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#1a1a2e;border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:28px 32px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.5);text-align:center">
+  <div id="linkToastTitle" style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:12px"></div>
+  <div id="linkToastUrl" style="font-size:13px;color:var(--accent-blue);word-break:break-all;background:rgba(255,255,255,0.05);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-family:monospace"></div>
+  <div style="display:flex;gap:10px;justify-content:center">
+    <button onclick="copyLink()" style="cursor:pointer;padding:8px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));color:#fff">📋 复制链接</button>
+    <button onclick="closeLinkToast()" style="cursor:pointer;padding:8px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:rgba(255,255,255,0.1);color:var(--text-secondary)">关闭</button>
+  </div>
+</div>
+<div id="linkOverlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.5)" onclick="closeLinkToast()"></div>
+
+<script>
+let _linkUrl = '';
+function showLink(title, url) {
+  _linkUrl = url;
+  document.getElementById('linkToastTitle').textContent = title;
+  document.getElementById('linkToastUrl').textContent = url;
+  document.getElementById('linkToast').style.display = 'block';
+  document.getElementById('linkOverlay').style.display = 'block';
+}
+function closeLinkToast() {
+  document.getElementById('linkToast').style.display = 'none';
+  document.getElementById('linkOverlay').style.display = 'none';
+}
+function copyLink() {
+  navigator.clipboard.writeText(_linkUrl).then(() => {
+    document.querySelector('#linkToast button:first-child').textContent = '✅ 已复制';
+    setTimeout(() => {
+      document.querySelector('#linkToast button:first-child').textContent = '📋 复制链接';
+    }, 2000);
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = _linkUrl;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    document.querySelector('#linkToast button:first-child').textContent = '✅ 已复制';
+    setTimeout(() => {
+      document.querySelector('#linkToast button:first-child').textContent = '📋 复制链接';
+    }, 2000);
+  });
+}
+</script>
 
 <!-- ============================================================
      JavaScript — 星河粒子 + 页面逻辑
@@ -983,8 +1024,8 @@ function createProjectCard(project) {
       ${project.tech.map(t => `<span class="tag">${escapeHTML(t)}</span>`).join('')}
     </div>
     <div class="card-actions">
-      ${project.demo ? `<a href="${escapeHTML(project.demo)}" class="btn btn-primary" target="_blank" rel="noopener">🔗 在线预览</a>` : ''}
-      ${project.source ? `<a href="${escapeHTML(project.source)}" class="btn btn-outline" target="_blank" rel="noopener">📂 查看源码</a>` : ''}
+      ${project.demo ? `<button onclick="showLink('🔗 在线预览','${escapeHTML(project.demo)}')" class="btn btn-primary" style="cursor:pointer;border:none">🔗 在线预览</button>` : ''}
+      ${project.source ? `<button onclick="showLink('📂 查看源码','${escapeHTML(project.source)}')" class="btn btn-outline" style="cursor:pointer;border:none">📂 查看源码</button>` : ''}
     </div>
   `;
   return card;
