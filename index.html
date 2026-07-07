@@ -906,7 +906,17 @@ body {
 const STORAGE_KEY = 'openclaw_projects';
 
 // 默认项目列表为空（不预设任何示例项目）
-const defaultProjects = [];
+const defaultProjects = [
+  {
+    name: '豆沙包 - AI 智能伴侣',
+    desc: '基于 DeepSeek V4 Flash 的 AI 聊天机器人，支持助手/男友/女友三种模式，可自定义头像、背景和回复风格。',
+    icon: '🤖',
+    category: 'ai',
+    tech: ['HTML', 'CSS', 'JavaScript', 'DeepSeek API', 'Vercel Serverless'],
+    demo: 'https://doushabao1.vercel.app/',
+    source: 'https://github.com/zhaosibo-1/doushabao1'
+  }
+];
 
 // 分类对应的图标映射
 const categoryIcons = {
