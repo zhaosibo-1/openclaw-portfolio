@@ -924,18 +924,27 @@ const categoryIcons = {
   mobile: '📱', ai: '🤖', cli: '⌨️', game: '🎮', other: '📦'
 };
 
-// 读取项目列表
+// 读取项目列表，合并 localStorage 和 defaultProjects（去重）
 function getProjects() {
+  let saved = [];
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) saved = parsed;
     }
   } catch (e) { /* ignore */ }
-  // 首次访问，写入空列表
-  saveProjects(defaultProjects);
-  return [...defaultProjects];
+
+  // 合并：defaultProjects 中的项目始终存在，localStorage 中的自定义项目保留
+  const merged = [...defaultProjects];
+  const defaultNames = new Set(defaultProjects.map(p => p.name));
+  for (const p of saved) {
+    if (!defaultNames.has(p.name)) {
+      merged.push(p);
+    }
+  }
+  saveProjects(merged);
+  return merged;
 }
 
 function saveProjects(projects) {
