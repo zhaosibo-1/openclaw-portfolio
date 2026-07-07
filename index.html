@@ -1023,6 +1023,36 @@ function updateStats() {
   if (el) el.textContent = getProjects().length;
 }
 
+// 在关于页底部添加项目链接
+function renderProjectLinks() {
+  const aboutSection = document.getElementById('about-section');
+  if (!aboutSection) return;
+  const projects = getProjects();
+  if (projects.length === 0) return;
+  
+  const container = aboutSection.querySelector('.container');
+  if (!container) return;
+  
+  // 避免重复添加
+  if (document.getElementById('project-links-section')) return;
+  
+  const linksDiv = document.createElement('div');
+  linksDiv.id = 'project-links-section';
+  linksDiv.style.cssText = 'margin-top:40px;padding-top:30px;border-top:1px solid var(--card-border)';
+  
+  let html = '<h3 style="margin-bottom:16px;font-size:1.1rem">📂 项目直达链接</h3>';
+  projects.forEach(p => {
+    html += '<div style="margin-bottom:12px;padding:12px 16px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px">';
+    html += '<div style="font-weight:600;margin-bottom:6px">' + p.icon + ' ' + p.name + '</div>';
+    if (p.demo) html += '<div style="margin:2px 0">🔗 在线预览: <a href="' + p.demo + '" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:underline;word-break:break-all">' + p.demo + '</a></div>';
+    if (p.source) html += '<div style="margin:2px 0">📂 查看源码: <a href="' + p.source + '" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:underline;word-break:break-all">' + p.source + '</a></div>';
+    html += '</div>';
+  });
+  
+  linksDiv.innerHTML = html;
+  container.appendChild(linksDiv);
+}
+
 /* ============================================================
    四、页面导航
    ============================================================ */
@@ -1040,7 +1070,7 @@ function navigateTo(page) {
   // 根据页面渲染内容
   if (page === 'home') renderFeatured();
   else if (page === 'projects') renderAllProjects();
-  else if (page === 'about') updateStats();
+  else if (page === 'about') { updateStats(); renderProjectLinks(); }
 
   // 移动端关闭菜单
   document.getElementById('navLinks').classList.remove('open');
