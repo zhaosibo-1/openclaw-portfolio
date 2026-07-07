@@ -974,8 +974,8 @@ function createProjectCard(project) {
       ${project.tech.map(t => `<span class="tag">${escapeHTML(t)}</span>`).join('')}
     </div>
     <div class="card-actions">
-      ${project.demo ? `<a href="${escapeHTML(project.demo)}" target="_blank" rel="noopener" class="btn btn-primary">🔗 在线预览</a>` : ''}
-      ${project.source ? `<a href="${escapeHTML(project.source)}" target="_blank" rel="noopener" class="btn btn-outline">📂 查看源码</a>` : ''}
+      ${project.demo ? `<a href="${escapeHTML(project.demo)}" class="btn btn-primary" onclick="event.stopPropagation()">🔗 在线预览</a>` : ''}
+      ${project.source ? `<a href="${escapeHTML(project.source)}" class="btn btn-outline" onclick="event.stopPropagation()">📂 查看源码</a>` : ''}
     </div>
   `;
   return card;
