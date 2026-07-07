@@ -974,10 +974,18 @@ function createProjectCard(project) {
       ${project.tech.map(t => `<span class="tag">${escapeHTML(t)}</span>`).join('')}
     </div>
     <div class="card-actions">
-      ${project.demo ? `<button class="btn btn-primary" onclick="window.open('${escapeHTML(project.demo)}','_blank')">🔗 在线预览</button>` : ''}
-      ${project.source ? `<button class="btn btn-outline" onclick="window.open('${escapeHTML(project.source)}','_blank')">📂 查看源码</button>` : ''}
+      ${project.demo ? `<a href="${escapeHTML(project.demo)}" class="btn btn-primary" data-href="${escapeHTML(project.demo)}">🔗 在线预览</a>` : ''}
+      ${project.source ? `<a href="${escapeHTML(project.source)}" class="btn btn-outline" data-href="${escapeHTML(project.source)}">📂 查看源码</a>` : ''}
     </div>
   `;
+  // 为卡片内的按钮绑定点击事件
+  card.querySelectorAll('.card-actions a').forEach(a => {
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = this.getAttribute('data-href');
+    });
+  });
   return card;
 }
 
